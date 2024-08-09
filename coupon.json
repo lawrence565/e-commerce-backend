@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "name": "新用戶註冊禮",
+    "discount": 300,
+    "code": "newuser300",
+    "expirement": "2024/10/30"
+  },
+  {
+    "id": 2,
+    "name": "除舊佈新",
+    "discount": 150,
+    "code": "cleanoutold150",
+    "expirement": "2024/10/30"
+  }
+]

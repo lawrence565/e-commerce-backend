@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "Artisan’s Haven",
+    "description": "充滿藝術氣息和鄉村風格的文創商店，店內充滿了溫暖和歡迎的氛圍，展示著各種手工藝品。",
+    "img": "./Stores/Artisan’s_Haven.webp"
+  },
+  {
+    "id": 2,
+    "name": "Urban Craft Corner",
+    "description": "一家現代風格的文創商店，設計時尚，展示著當代手工藝品，適合都市潮人的選擇。",
+    "img": "./Stores/Urban_Craft_Corner.webp"
+  },
+  {
+    "id": 3,
+    "name": "Vintage Vibes Boutique",
+    "description": "一家充滿古典魅力的文創商店，店內擺滿了仿古風格的手工藝品，讓顧客感受到溫馨和迷人的氛圍。",
+    "img": "./Stores/Vintage_Vibes_Boutique.webp"
+  },
+  {
+    "id": 4,
+    "name": "Color Splash Creations",
+    "description": "一家明亮且充滿色彩的文創商店，設計活潑，展示著各種充滿童趣和繽紛色彩的手工藝品。",
+    "img": "./Stores/Color_Splash_Creations.webp"
+  }
+]
