@@ -37,7 +37,6 @@ app.get("/test", (req, res) => {
 
 app.get("/getProduct/:_category?/:_id?", async (req, res) => {
   const { _category, _id } = req.params;
-  console.log(_category, _id);
 
   if (_category && _id) {
     try {
