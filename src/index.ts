@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import session from "express-session";
+import cookieParser from "cookie-parser";
 import { Client } from "pg";
 dotenv.config();
 
@@ -31,6 +32,7 @@ db.connect()
 const secret =
   process.env.SESSION_SECRET !== undefined ? process.env.SESSION_SECRET : " ";
 
+app.use(cookieParser(process.env.MYCOOKIESECRET));
 app.use(
   session({
     secret: secret,
@@ -39,9 +41,15 @@ app.use(
     cookie: { secure: false },
   })
 );
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 app.get("/test", (req, res) => {
   res.send("Success connect");
@@ -56,6 +64,7 @@ app.get("/api/getProduct/:_category?/:_id?", async (req, res) => {
         "SELECT * FROM products WHERE category = $1 AND id = $2",
         [_category, _id]
       );
+
       res.status(200).json({ status: "ok", data: product.rows });
     } catch (e) {
       res
@@ -97,44 +106,55 @@ app.get("/api/getProduct/:_category?/:_id?", async (req, res) => {
 });
 
 app.get("/api/cart", async (req, res) => {
+  console.log(" And session is: ", req.session.cart);
+
   try {
     if (!req.session.cart) {
       req.session.cart = [];
-      res.status(200).json({ status: "ok", message: "購物車中沒有商品哦！" });
+      res.status(200).json({ status: "ok", data: "購物車中沒有商品哦！" });
     } else {
-      res.status(200).json({ status: "ok", data: req.session.cart });
+      if (req.session.cart.length < 1) {
+        res.status(200).json({ status: "ok", data: "購物車中沒有商品哦！" });
+      } else {
+        res.status(200).json({ status: "ok", data: req.session.cart });
+      }
     }
   } catch (e) {
     res.status(500).json({
       status: "error",
-      message: "出現錯誤請再試一次",
+      message: "獲取購物車資料出現錯誤請再試一次",
       error: e,
     });
   }
 });
 
 app.post("/api/cart", (req, res) => {
+  const { productId, category, quantity } = req.body;
+
   try {
-    const { productId, quantity } = req.body;
     if (!req.session.cart) {
       req.session.cart = [];
     }
 
     const existingItem = req.session.cart.find(
-      (item) => item.productId === productId
+      (item) => item.productId === productId && item.category === category
     );
 
     if (existingItem) {
       existingItem.quantity += quantity;
     } else {
-      req.session.cart.push({ productId, quantity });
+      req.session.cart.push({
+        productId: productId,
+        category: category,
+        quantity: quantity,
+      });
     }
 
     res.status(200).json({ status: "ok", data: req.session.cart });
   } catch (e) {
     res.status(500).json({
       status: "error",
-      message: "出現錯誤請再試一次",
+      message: "加入購物車出現錯誤請再試一次",
       error: e,
     });
   }
