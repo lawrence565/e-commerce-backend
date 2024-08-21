@@ -6,6 +6,46 @@ import cookieParser from "cookie-parser";
 import { Client } from "pg";
 dotenv.config();
 
+type CartItem = {
+  productId: number;
+  category: string;
+  quantity: number;
+};
+
+type CardInfo = {
+  cardNumber: string;
+  expiryMonth: number | string;
+  expiryYear: number | string;
+  securityCode: string;
+};
+
+type ATMInfo = {
+  bank: string;
+  account: string;
+  transferAccount: string;
+};
+
+type ShippmentInfo = {
+  city: string;
+  district: string;
+  road: string;
+  detail: string;
+};
+
+type Recipient = {
+  name: string;
+  phone: string;
+  email: string;
+};
+
+type Order = {
+  products: CartItem;
+  recipient: Recipient;
+  shippment: ShippmentInfo;
+  paymentInfo: CardInfo | ATMInfo;
+  comment: string;
+};
+
 const app = express();
 const port =
   process.env.POSTGRES_PORT !== undefined
@@ -51,9 +91,26 @@ app.use(
   })
 );
 
-app.get("/test", (req, res) => {
-  res.send("Success connect");
-});
+function mergeCarts(
+  cookieCart: CartItem[],
+  sessionCart: CartItem[]
+): CartItem[] {
+  const mergedCart = [...cookieCart];
+  sessionCart.forEach((sessionItem) => {
+    const index = mergedCart.findIndex(
+      (item) => item.productId === sessionItem.productId
+    );
+    if (index !== -1) {
+      //有找到商品便確認數量
+      if (mergedCart[index].quantity < sessionItem.quantity) {
+        mergedCart[index].quantity = sessionItem.quantity;
+      }
+    } else {
+      mergedCart.push(sessionItem);
+    }
+  });
+  return mergedCart;
+}
 
 app.get("/api/getProduct/:_category?/:_id?", async (req, res) => {
   const { _category, _id } = req.params;
@@ -106,15 +163,13 @@ app.get("/api/getProduct/:_category?/:_id?", async (req, res) => {
 });
 
 app.get("/api/cart", async (req, res) => {
-  console.log(" And session is: ", req.session.cart);
-
   try {
     if (!req.session.cart) {
       req.session.cart = [];
-      res.status(200).json({ status: "ok", data: "購物車中沒有商品哦！" });
+      res.status(200).json({ status: "ok", data: [] });
     } else {
       if (req.session.cart.length < 1) {
-        res.status(200).json({ status: "ok", data: "購物車中沒有商品哦！" });
+        res.status(200).json({ status: "ok", data: [] });
       } else {
         res.status(200).json({ status: "ok", data: req.session.cart });
       }
@@ -160,16 +215,85 @@ app.post("/api/cart", (req, res) => {
   }
 });
 
-app.delete("/api/cart", (req, res) => {
+app.put("/api/cart", (req, res) => {
+  if (!req.session.cart) {
+    req.session.cart = [];
+  }
+
+  const cookieCart = req.body;
+  const sessionCart = req.session.cart;
+
   try {
-    const { productId, quantity } = req.body;
+    let mergedCart: CartItem[];
+    if (cookieCart.length > 0 && sessionCart.length < 1) {
+      req.session.cart = cookieCart;
+      mergedCart = cookieCart;
+    } else if (cookieCart.length < 1 && sessionCart.length > 0) {
+      mergedCart = sessionCart;
+    } else if (cookieCart.length > 0 && sessionCart.length > 0) {
+      mergedCart = mergeCarts(cookieCart, sessionCart);
+    } else {
+      mergedCart = [];
+    }
+    if (mergedCart.length > 0) {
+      res.status(200).json({ status: "ok", data: mergedCart });
+    }
+  } catch (e) {
+    console.log(e);
+
+    res.status(500).json({
+      status: "error",
+      message: "更新購物車商品數量出現錯誤，請再試一次",
+      error: e,
+    });
+  }
+});
+
+app.put("/api/cart/:id", (req, res) => {
+  const { data } = req.body;
+  const id = data.id,
+    newQty = data.newQty;
+
+  try {
+    if (!req.session.cart) {
+      req.session.cart = [];
+    }
+
+    const existingItem = req.session.cart.find((item) => item.productId === id);
+
+    if (existingItem) {
+      existingItem.quantity = newQty;
+    }
+
+    res.status(200).json({ status: "ok", data: req.session.cart });
+  } catch (e) {
+    console.log(e);
+
+    res.status(500).json({
+      status: "error",
+      message: "更新購物車商品數量出現錯誤，請再試一次",
+      error: e,
+    });
+  }
+});
+
+app.delete("/api/cart/:id", (req, res) => {
+  const _id = parseInt(req.params.id);
+  console.log("This time the id of the deleted item is " + _id);
+
+  try {
     if (!req.session.cart) {
       req.session.cart = [];
     }
 
     const deleteIndex = req.session.cart.findIndex(
-      (item) => item.productId === productId
+      (item) => item.productId === _id
     );
+    console.log(
+      "Deleting function functioning and the index of the deleted item is " +
+        deleteIndex
+    );
+
     if (deleteIndex != -1) {
       req.session.cart.splice(deleteIndex, 1);
     }
@@ -193,6 +317,34 @@ app.delete("/api/carts", (req, res) => {
       .status(200)
       .json({ status: "error", message: "出現錯誤請再試一次", error: e });
   }
+});
+
+app.get(`/api/order/:id`, async (req, res) => {
+  const id = req.params;
+  try {
+    const order = await db.query("SELECT * FROM orders WHERE id = $1", [id]);
+  } catch (e) {
+    console.log("Something happened", e);
+  }
+});
+
+app.post(`/api/order`, async (req, res) => {
+  const order: Order = req.body;
+  console.log(order);
+  const address: string = `${order.shippment.city}${order.shippment.district}${order.shippment.road}${order.shippment.detail}`;
+  console.log(address);
+
+  const responce = await db.query(
+    "INSERT INTO orders (products, payment, recipient, shippment, paid, shipped ) VALUES ($1, $2, $3, $4, $5, $6)",
+    [
+      JSON.stringify(order.products),
+      JSON.stringify(order.paymentInfo),
+      JSON.stringify(order.recipient),
+      address,
+      false,
+      false,
+    ]
+  );
 });
 
 app.listen(8080, () => {
