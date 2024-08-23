@@ -40,6 +40,7 @@ type Recipient = {
 
 type Order = {
   products: CartItem;
+  price: number;
   recipient: Recipient;
   shippment: ShippmentInfo;
   paymentInfo: CardInfo | ATMInfo;
@@ -323,28 +324,48 @@ app.get(`/api/order/:id`, async (req, res) => {
   const id = req.params;
   try {
     const order = await db.query("SELECT * FROM orders WHERE id = $1", [id]);
+    res.status(200).json({ status: "ok", data: order.rows });
   } catch (e) {
     console.log("Something happened", e);
+    res.status(500).json({
+      status: "error",
+      message: "更新購物車商品數量出現錯誤，請再試一次",
+      error: e,
+    });
   }
 });
 
 app.post(`/api/order`, async (req, res) => {
   const order: Order = req.body;
-  console.log(order);
   const address: string = `${order.shippment.city}${order.shippment.district}${order.shippment.road}${order.shippment.detail}`;
-  console.log(address);
+  const date = new Date().getDate();
 
-  const responce = await db.query(
-    "INSERT INTO orders (products, payment, recipient, shippment, paid, shipped ) VALUES ($1, $2, $3, $4, $5, $6)",
-    [
-      JSON.stringify(order.products),
-      JSON.stringify(order.paymentInfo),
-      JSON.stringify(order.recipient),
-      address,
-      false,
-      false,
-    ]
-  );
+  try {
+    const responce = await db.query(
+      "INSERT INTO orders (order_date, products, price, payment, recipient, address, remarks, paid, shipped ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+      [
+        date,
+        JSON.stringify(order.products),
+        order.price,
+        JSON.stringify(order.paymentInfo),
+        JSON.stringify(order.recipient),
+        address,
+        order.comment,
+        false,
+        false,
+      ]
+    );
+    if (responce) req.session.cart = [];
+    res.status(200).json({ status: "ok", data: responce.rows });
+  } catch (e) {
+    console.log(e);
+
+    res.status(500).json({
+      status: "error",
+      message: "更新購物車商品數量出現錯誤，請再試一次",
+      error: e,
+    });
+  }
 });
 
 app.listen(8080, () => {
