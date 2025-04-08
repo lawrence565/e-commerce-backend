@@ -113,85 +113,65 @@ function mergeCarts(
   return mergedCart;
 }
 
+// Utility function to handle database queries with error handling
+async function queryDatabase(query: string, params: any[], res: any) {
+  try {
+    const result = await db.query(query, params);
+    return result;
+  } catch (e) {
+    console.error("Database query error:", e);
+    res.status(500).json({
+      status: "error",
+      message: "資料庫操作失敗，請稍後再試",
+      error: e,
+    });
+    throw e;
+  }
+}
+
+// Refactor /api/getProduct/:_category?/:_id? route
 app.get("/api/getProduct/:_category?/:_id?", async (req, res) => {
   const { _category, _id } = req.params;
 
-  if (_category && _id) {
-    try {
-      const product = await db.query(
-        "SELECT * FROM products WHERE category = $1 AND id = $2",
-        [_category, _id]
-      );
+  try {
+    let query = "SELECT * FROM products";
+    const params: any[] = [];
 
-      res.status(200).json({ status: "ok", data: product.rows });
-    } catch (e) {
-      res
-        .status(500)
-        .send({ status: "error", message: "取得資料時遇到一些問題", error: e });
+    if (_category && _id) {
+      query += " WHERE category = $1 AND id = $2";
+      params.push(_category, _id);
+    } else if (_category && _category !== "all") {
+      query += " WHERE category = $1";
+      params.push(_category);
     }
-  } else if (_category && !_id) {
-    if (_category === "all") {
-      try {
-        const products = await db.query("SELECT * FROM products");
-        res.status(200).json({ status: "ok", data: products.rows });
-      } catch (e) {
-        res.status(500).json({
-          status: "error",
-          message: "取得資料時遇到一些問題",
-          error: e,
-        });
-      }
-    } else if (
-      _category === "gadget" ||
-      _category === "furniture" ||
-      _category === "decoration"
-    ) {
-      try {
-        const products = await db.query(
-          "SELECT * FROM products WHERE category = $1",
-          [_category]
-        );
-        res.status(200).json({ status: "ok", data: products.rows });
-      } catch (e) {
-        res
-          .status(500)
-          .json({ status: "error", data: "取得資料時遇到一些問題", error: e });
-      }
-    }
-  } else {
-    res.status(404).json({ status: "error", message: "您所尋找的商品不存在" });
+
+    const products = await queryDatabase(query, params, res);
+    res.status(200).json({ status: "ok", data: products.rows });
+  } catch (e) {
+    console.error("Error fetching products:", e);
   }
 });
 
-app.get("/api/cart", async (req, res) => {
+// Refactor /api/cart route
+app.get("/api/cart", (req, res) => {
   try {
-    if (!req.session.cart) {
-      req.session.cart = [];
-      res.status(200).json({ status: "ok", data: [] });
-    } else {
-      if (req.session.cart.length < 1) {
-        res.status(200).json({ status: "ok", data: [] });
-      } else {
-        res.status(200).json({ status: "ok", data: req.session.cart });
-      }
-    }
+    const cart = req.session.cart || [];
+    res.status(200).json({ status: "ok", data: cart });
   } catch (e) {
     res.status(500).json({
       status: "error",
-      message: "獲取購物車資料出現錯誤請再試一次",
+      message: "獲取購物車資料出現錯誤，請再試一次",
       error: e,
     });
   }
 });
 
+// Refactor /api/cart POST route
 app.post("/api/cart", (req, res) => {
   const { productId, category, quantity } = req.body;
 
   try {
-    if (!req.session.cart) {
-      req.session.cart = [];
-    }
-
+    req.session.cart = req.session.cart || [];
     const existingItem = req.session.cart.find(
       (item) => item.productId === productId && item.category === category
     );
@@ -199,54 +179,64 @@ app.post("/api/cart", (req, res) => {
     if (existingItem) {
       existingItem.quantity += quantity;
     } else {
-      req.session.cart.push({
-        productId: productId,
-        category: category,
-        quantity: quantity,
-      });
+      req.session.cart.push({ productId, category, quantity });
     }
 
     res.status(200).json({ status: "ok", data: req.session.cart });
   } catch (e) {
     res.status(500).json({
       status: "error",
-      message: "加入購物車出現錯誤請再試一次",
+      message: "加入購物車出現錯誤，請再試一次",
       error: e,
     });
   }
 });
 
+// Refactor /api/cart PUT route
 app.put("/api/cart", (req, res) => {
-  if (!req.session.cart) {
-    req.session.cart = [];
-  }
-
   const cookieCart = req.body;
-  const sessionCart = req.session.cart;
+  req.session.cart = req.session.cart || [];
 
   try {
-    let mergedCart: CartItem[];
-    if (cookieCart.length > 0 && sessionCart.length < 1) {
-      req.session.cart = cookieCart;
-      mergedCart = cookieCart;
-    } else if (cookieCart.length < 1 && sessionCart.length > 0) {
-      mergedCart = sessionCart;
-    } else if (cookieCart.length > 0 && sessionCart.length > 0) {
-      mergedCart = mergeCarts(cookieCart, sessionCart);
-    } else {
-      mergedCart = [];
-    }
-    if (mergedCart.length > 0) {
-      res.status(200).json({ status: "ok", data: mergedCart });
-    }
+    const mergedCart = mergeCarts(cookieCart, req.session.cart);
+    req.session.cart = mergedCart;
+    res.status(200).json({ status: "ok", data: mergedCart });
   } catch (e) {
-    console.log(e);
-
     res.status(500).json({
       status: "error",
       message: "更新購物車商品數量出現錯誤，請再試一次",
       error: e,
     });
+  }
+});
+
+// Refactor /api/order POST route
+app.post(`/api/order`, async (req, res) => {
+  const order: Order = req.body;
+  const address = `${order.shippment.city}${order.shippment.district}${order.shippment.road}${order.shippment.detail}`;
+  const date = new Date().toISOString();
+
+  try {
+    const query = `
+      INSERT INTO orders (order_date, products, price, payment, recipient, address, remarks, paid, shipped)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`;
+    const params = [
+      date,
+      JSON.stringify(order.products),
+      order.price,
+      JSON.stringify(order.paymentInfo),
+      JSON.stringify(order.recipient),
+      address,
+      order.comment,
+      false,
+      false,
+    ];
+
+    const response = await queryDatabase(query, params, res);
+    req.session.cart = [];
+    res.status(200).json({ status: "ok", data: response.rows });
+  } catch (e) {
+    console.error("Error creating order:", e);
   }
 });
 
@@ -327,39 +317,6 @@ app.get(`/api/order/:id`, async (req, res) => {
     res.status(200).json({ status: "ok", data: order.rows });
   } catch (e) {
     console.log("Something happened", e);
-    res.status(500).json({
-      status: "error",
-      message: "更新購物車商品數量出現錯誤，請再試一次",
-      error: e,
-    });
-  }
-});
-
-app.post(`/api/order`, async (req, res) => {
-  const order: Order = req.body;
-  const address: string = `${order.shippment.city}${order.shippment.district}${order.shippment.road}${order.shippment.detail}`;
-  const date = new Date().getDate();
-
-  try {
-    const responce = await db.query(
-      "INSERT INTO orders (order_date, products, price, payment, recipient, address, remarks, paid, shipped ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
-      [
-        date,
-        JSON.stringify(order.products),
-        order.price,
-        JSON.stringify(order.paymentInfo),
-        JSON.stringify(order.recipient),
-        address,
-        order.comment,
-        false,
-        false,
-      ]
-    );
-    if (responce) req.session.cart = [];
-    res.status(200).json({ status: "ok", data: responce.rows });
-  } catch (e) {
-    console.log(e);
-
     res.status(500).json({
       status: "error",
       message: "更新購物車商品數量出現錯誤，請再試一次",
