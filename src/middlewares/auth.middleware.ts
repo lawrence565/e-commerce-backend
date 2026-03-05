@@ -7,6 +7,7 @@ declare module "express-serve-static-core" {
   }
 }
 
+// agent:security — JWT Verification middleware using HTTPOnly cookies
 export const authenticate = async (
   req: Request,
   res: Response,

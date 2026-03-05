@@ -14,7 +14,7 @@ const ShippmentInfoSchema = z.object({
   detail: z.string(),
 });
 
-// Only storing payment token information now, NOT PAN (card numbers)
+// agent:schema — PaymentToken schema (DO NOT store raw PAN or CVV)
 const PaymentInfoSchema = z.object({
   payment_method: z.enum(["credit_card", "atm_transfer"]),
   payment_token: z.string().optional(), // Token from Stripe/TapPay/ECPay

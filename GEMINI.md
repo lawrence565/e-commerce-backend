@@ -122,14 +122,15 @@ E-commerce-backend/
 - **products**: `id (SERIAL PK)`, `title`, `name`, `category`, `price (NUMERIC)`, `description`
 - **orders**: `id (SERIAL PK)`, `order_date (TIMESTAMPTZ)`, `products (JSONB)`, `price (NUMERIC)`, `payment_method (TEXT)`, `payment_token (TEXT)`, `payment_status (TEXT)`, `recipient (JSONB)`, `address`, `remarks`, `paid (BOOL)`, `shipped (BOOL)`
 
-## Security & Architecture Enhancements (Phases 0, 1, 2, 3 & 4 Complete)
+## Security & Architecture Enhancements (Phases 0-6 Complete)
 
 - **Architecture**: The massive monolithic `index.ts` was torn down and restructured into dedicated layers (`routes`, `controllers`, `services`, `repositories`), enabling isolated testing and cleaner code.
 - **Performance (Database)**: Upgraded from `pg.Client` to a highly scalable `pg.Pool` to handle concurrent connections efficiently. Added indexing to `products` and `orders` tables for significantly faster querying.
 - **Performance (Caching)**: Integrated `ioredis`. Express sessions are now persisted in Redis using `connect-redis`. The `ProductService` uses a Cache-Aside pattern (with a 5-minute TTL) to aggressively serve product lists directly from memory.
 - **RESTful API Design**: Upgraded `/api/getProduct` to a standardized `/api/products` endpoint supporting pagination (`page`, `limit`) and sorting (`sort`, `order`).
 - **Containerization & DevOps**: Implemented a highly optimized multi-stage `Dockerfile` (Node 22 Alpine, non-root user, `dumb-init`). Split Docker compose into `compose.yaml` (Production) and `compose.dev.yaml` (Development with `tsx` hot-reloading). Added `/health` monitoring endpoints and a GitHub Actions CI pipeline.
-- **Logging**: Added `pino` for robust JSON structured logging across the application.
+- **Observability**: Integrated `pino` and `pino-http` for robust, high-performance JSON structured logging across the application.
+- **Agent-Readiness & Documentation**: Added `swagger-jsdoc` and `swagger-ui-express` to automatically generate and host OpenAPI 3.0 documentation at `/api-docs`. Embedded structural `// agent:` comments throughout the codebase to ensure future AI agents can instantly understand the architectural layout.
 - **Error Handling**: Standardized error management through a centralized `ApiError` utility and global middleware.
 - **Input Validation**: All incoming requests are now validated via `Zod` schemas and a global middleware (`src/middlewares/validate.middleware.ts`).
 - **Security Middlewares**: Integrated `helmet`, `express-rate-limit`, `hpp`, and secure cookies based on the environment. CORS origins are dynamically configured.
