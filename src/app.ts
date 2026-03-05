@@ -13,9 +13,13 @@ import routes from "./routes";
 import { errorHandler } from "./middlewares/error-handler.middleware";
 import { RedisStore } from "connect-redis";
 import { redisClient } from "./config/redis";
+import { HealthController } from "./controllers/health.controller";
 
 const app = express();
 const isProduction = config.env === "production";
+
+// Root-level health check for orchestrators
+app.get("/health", HealthController.check);
 
 // Trust proxy for rate limiter if behind a reverse proxy
 app.set("trust proxy", 1);

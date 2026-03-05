@@ -1,0 +1,15 @@
+# Local Development overrides
+services:
+  backend:
+    build:
+      context: .
+      target: builder
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      # Mount source code for hot reloading
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./coupon.json:/app/coupon.json

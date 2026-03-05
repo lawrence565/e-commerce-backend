@@ -66,12 +66,13 @@ E-commerce-backend/
 
 ### Commands
 
-| Command             | Description                         |
-| ------------------- | ----------------------------------- |
-| `npm install`       | Install dependencies                |
-| `npm run build`     | Compile TypeScript → `dist/`        |
-| `npm run dev`       | Build + run `dist/index.js`         |
-| `docker compose up` | Start backend + Postgres containers |
+| Command                                                 | Description                                          |
+| ------------------------------------------------------- | ---------------------------------------------------- |
+| `npm install`                                           | Install dependencies                                 |
+| `npm run build`                                         | Compile TypeScript → `dist/`                         |
+| `npm run dev`                                           | Run development server with `tsx` hot-reloading      |
+| `docker compose -f compose.yaml -f compose.dev.yaml up` | Start local development environment with auto-reload |
+| `docker compose up --build`                             | Start production-like environment                    |
 
 ## API Endpoints
 
@@ -121,12 +122,13 @@ E-commerce-backend/
 - **products**: `id (SERIAL PK)`, `title`, `name`, `category`, `price (NUMERIC)`, `description`
 - **orders**: `id (SERIAL PK)`, `order_date (TIMESTAMPTZ)`, `products (JSONB)`, `price (NUMERIC)`, `payment_method (TEXT)`, `payment_token (TEXT)`, `payment_status (TEXT)`, `recipient (JSONB)`, `address`, `remarks`, `paid (BOOL)`, `shipped (BOOL)`
 
-## Security & Architecture Enhancements (Phases 0, 1, 2 & 3 Complete)
+## Security & Architecture Enhancements (Phases 0, 1, 2, 3 & 4 Complete)
 
 - **Architecture**: The massive monolithic `index.ts` was torn down and restructured into dedicated layers (`routes`, `controllers`, `services`, `repositories`), enabling isolated testing and cleaner code.
 - **Performance (Database)**: Upgraded from `pg.Client` to a highly scalable `pg.Pool` to handle concurrent connections efficiently. Added indexing to `products` and `orders` tables for significantly faster querying.
 - **Performance (Caching)**: Integrated `ioredis`. Express sessions are now persisted in Redis using `connect-redis`. The `ProductService` uses a Cache-Aside pattern (with a 5-minute TTL) to aggressively serve product lists directly from memory.
 - **RESTful API Design**: Upgraded `/api/getProduct` to a standardized `/api/products` endpoint supporting pagination (`page`, `limit`) and sorting (`sort`, `order`).
+- **Containerization & DevOps**: Implemented a highly optimized multi-stage `Dockerfile` (Node 22 Alpine, non-root user, `dumb-init`). Split Docker compose into `compose.yaml` (Production) and `compose.dev.yaml` (Development with `tsx` hot-reloading). Added `/health` monitoring endpoints and a GitHub Actions CI pipeline.
 - **Logging**: Added `pino` for robust JSON structured logging across the application.
 - **Error Handling**: Standardized error management through a centralized `ApiError` utility and global middleware.
 - **Input Validation**: All incoming requests are now validated via `Zod` schemas and a global middleware (`src/middlewares/validate.middleware.ts`).

@@ -4,10 +4,12 @@ import cartRoutes from "./cart.routes";
 import orderRoutes from "./order.routes";
 import authRoutes from "./auth.routes";
 import { CartController } from "../controllers/cart.controller";
+import { HealthController } from "../controllers/health.controller";
 
 const router = Router();
 
 // Modular Routes
+router.get("/health", HealthController.check); // agent:monitoring - health check
 router.use("/products", productRoutes); // Modern RESTful endpoint
 router.use("/getProduct", productRoutes); // Keeps backward compatibility with /api/getProduct
 router.use("/cart", cartRoutes);

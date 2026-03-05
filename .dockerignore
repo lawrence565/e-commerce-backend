@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.env
+*.md
+.DS_Store
+.editorconfig
+tests
+coverage
+.vscode
+.husky
+eslint.config.mjs
+vitest.config.ts
