@@ -20,34 +20,33 @@ This is a Node.js-based backend for an e-commerce website, built using **Express
 
 ### Architecture Characteristics
 
-- **Monolithic single-file**: All route handlers, types, DB client, and middleware setup reside in `src/index.ts` (331 lines).
-- **No authentication/authorization**: No user system; cart relies solely on anonymous sessions.
-- **No input validation or sanitization**: Request bodies are trusted without schema validation.
-- **No test suite**: `npm test` is a placeholder (`echo "Error: no test specified"`).
-- **No logging framework**: Uses raw `console.log` / `console.error`.
-- **No rate limiting or security headers**: Missing `helmet`, rate limiter, CSRF protection.
+- **Layered Design**: Follows a strict Route → Controller → Service → Repository pattern for clean separation of concerns.
+- **Centralized Error Handling**: Utilizes an `ApiError` class and global error handler middleware.
+- **Environment Driven**: Configurations and secrets are loaded centrally from `src/config/index.ts`.
+- **Structured Logging**: Uses `pino` and `pino-http` for high-performance JSON logging.
 
 ## Project Structure
 
 ```
 E-commerce-backend/
 ├── src/
-│   ├── index.ts              # Main entry: server, routes, DB client, all types
-│   ├── index.js              # Compiled JS (should be in dist/, appears duplicated)
-│   ├── service/
-│   │   ├── authenticate.service.ts   # Placeholder (empty)
-│   │   └── authenticate.service.js   # Compiled placeholder
-│   └── types/
-│       └── express-session.d.ts      # Extends SessionData with cart: CartItem[]
-├── db/
-│   └── init.sql              # Schema: products, orders tables + seed data
-├── Dockerfile                # Single-stage, node:20, no .dockerignore
-├── compose.yaml              # backend + postgres:15, dev volumes
-├── coupon.json               # Static coupon data (expired 2024/10)
+│   ├── app.ts                # Express application setup, middlewares, routes
+│   ├── server.ts             # Application entry point, starts the server
+│   ├── config/               # Configuration files (env parsing, database connection)
+│   ├── controllers/          # HTTP request/response handlers
+│   ├── middlewares/          # Custom Express middlewares (auth, error-handling, validate)
+│   ├── repositories/         # Database access layer (raw queries encapsulated here)
+│   ├── routes/               # Express router configurations
+│   ├── schemas/              # Zod validation schemas
+│   ├── services/             # Core business logic layer
+│   ├── types/                # Shared TypeScript type definitions
+│   └── utils/                # Helper utilities (logger, error classes, JWT functions)
+├── tests/                    # Vitest testing directories (unit/integration/e2e)
+├── db/                       # Database initialization scripts
+├── Dockerfile
+├── compose.yaml
 ├── package.json
-├── tsconfig.json
-├── .env                      # DB creds, session/cookie secrets
-└── .gitignore
+└── tsconfig.json
 ```
 
 ## Building and Running
@@ -122,14 +121,16 @@ E-commerce-backend/
 - **products**: `id (SERIAL PK)`, `title`, `name`, `category`, `price (NUMERIC)`, `description`
 - **orders**: `id (SERIAL PK)`, `order_date (TIMESTAMPTZ)`, `products (JSONB)`, `price (NUMERIC)`, `payment_method (TEXT)`, `payment_token (TEXT)`, `payment_status (TEXT)`, `recipient (JSONB)`, `address`, `remarks`, `paid (BOOL)`, `shipped (BOOL)`
 
-## Security & Architecture Enhancements (Phase 0 & 1 Complete)
+## Security & Architecture Enhancements (Phases 0, 1, and 2 Complete)
 
+- **Architecture**: The massive monolithic `index.ts` was torn down and restructured into dedicated layers (`routes`, `controllers`, `services`, `repositories`), enabling isolated testing and cleaner code.
+- **Logging**: Added `pino` for robust JSON structured logging across the application.
+- **Error Handling**: Standardized error management through a centralized `ApiError` utility and global middleware.
 - **Input Validation**: All incoming requests are now validated via `Zod` schemas and a global middleware (`src/middlewares/validate.middleware.ts`).
 - **Security Middlewares**: Integrated `helmet`, `express-rate-limit`, `hpp`, and secure cookies based on the environment. CORS origins are dynamically configured.
 - **Payment Security**: Raw credit card information (PAN) is no longer stored. The `orders` schema has been updated to use secure payment tokens.
 - **Code Quality**: `ESLint v9`, `Prettier`, and strict TypeScript rules are enforced via Husky pre-commit hooks.
 - **Testing**: `Vitest` is configured for future unit, integration, and E2E tests.
-- **Bug Fixes**: Previous issues with `GET /api/order/:id` parameter parsing, `DELETE /api/carts` error status codes, and `coupon.json` typos have been resolved. Compiled JS artifacts in the `src/` directory have been purged.
 
 ## Development Conventions
 

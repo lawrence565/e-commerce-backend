@@ -2,7 +2,7 @@
   "ts-node": {
     "files": true
   },
-  "files": ["src/index.ts", "src/types/express-session.d.ts"],
+  "files": ["src/server.ts", "src/types/express-session.d.ts"],
   "compilerOptions": {
     /* Language and Environment */
     "target": "ESNext" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,

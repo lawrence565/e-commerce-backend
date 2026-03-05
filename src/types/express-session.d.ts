@@ -1,6 +1,8 @@
 import "express-session";
+import { CartItem } from "./cart.types";
+
 declare module "express-session" {
   interface SessionData {
-    cart?: { productId: number; category: string; quantity: number }[];
+    cart?: CartItem[];
   }
 }
