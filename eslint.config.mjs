@@ -9,7 +9,7 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        project: true,
+        project: "./tsconfig.eslint.json",
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -24,6 +24,6 @@ export default tseslint.config(
     }
   },
   {
-    ignores: ["dist/", "node_modules/", "coverage/", "eslint.config.mjs", "jest.config.ts", "vitest.config.ts"]
+    ignores: ["dist/", "node_modules/", "coverage/", "eslint.config.mjs", "jest.config.ts", "vitest.config.ts", "scripts/"]
   }
 );

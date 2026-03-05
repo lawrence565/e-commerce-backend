@@ -138,6 +138,15 @@ E-commerce-backend/
 - **Code Quality**: `ESLint v9`, `Prettier`, and strict TypeScript rules are enforced via Husky pre-commit hooks.
 - **Testing**: `Vitest` is configured for future unit, integration, and E2E tests.
 
+## Engineering Baselines
+
+To guarantee the long-term stability and maintainability of the project, strict automated baselines have been established:
+
+1. **Code Quality:** GitHub Actions CI enforces `0` ESLint warnings and `0` TypeScript compilation errors on every PR via Husky and lint-staged.
+2. **Testing Coverage:** `vitest.config.ts` enforces a strict minimum code coverage of **80%** (Lines, Branches, Functions, Statements). The CI pipeline will fail if coverage drops below this threshold.
+3. **Security:** The CI pipeline runs `npm audit --audit-level=high` before testing to block the merge of any high or critical vulnerability dependencies.
+4. **Performance:** A baseline `k6` load test (`scripts/load-tests/baseline.k6.js`) ensures the API can sustain 50 concurrent users, requiring that 95% of requests complete in under **200ms** with a failure rate of `< 1%`.
+
 ## Development Conventions
 
 - **RESTful Principles:** Endpoints follow standard HTTP methods for CRUD operations.
