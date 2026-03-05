@@ -8,6 +8,7 @@ import { CartController } from "../controllers/cart.controller";
 const router = Router();
 
 // Modular Routes
+router.use("/products", productRoutes); // Modern RESTful endpoint
 router.use("/getProduct", productRoutes); // Keeps backward compatibility with /api/getProduct
 router.use("/cart", cartRoutes);
 router.use("/order", orderRoutes);

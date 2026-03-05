@@ -1,11 +1,13 @@
 import app from "./app";
 import { config } from "./config";
 import { connectDb } from "./config/database";
+import { connectRedis } from "./config/redis";
 import { logger } from "./utils/logger";
 
 const startServer = async () => {
   try {
     await connectDb();
+    await connectRedis();
 
     app.listen(config.serverPort, () => {
       logger.info(

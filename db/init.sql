@@ -37,3 +37,8 @@ CREATE TABLE IF NOT EXISTS orders (
   paid BOOLEAN DEFAULT FALSE,
   shipped BOOLEAN DEFAULT FALSE
 );
+
+-- Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_products_category ON products (category);
+CREATE INDEX IF NOT EXISTS idx_orders_date ON orders (order_date DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders (paid, shipped);

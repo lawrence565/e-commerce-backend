@@ -11,6 +11,8 @@ import { config } from "./config";
 import { logger } from "./utils/logger";
 import routes from "./routes";
 import { errorHandler } from "./middlewares/error-handler.middleware";
+import { RedisStore } from "connect-redis";
+import { redisClient } from "./config/redis";
 
 const app = express();
 const isProduction = config.env === "production";
@@ -46,9 +48,13 @@ app.use(
   })
 );
 
-// Sessions
+// Session Store with Redis
 app.use(
   session({
+    store: new RedisStore({
+      client: redisClient,
+      prefix: "ecommerce:session:",
+    }),
     secret: config.sessionSecret,
     resave: false,
     saveUninitialized: false,
@@ -56,6 +62,7 @@ app.use(
       secure: isProduction,
       sameSite: isProduction ? "strict" : "lax",
       httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours TTL
     },
   })
 );

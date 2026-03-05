@@ -121,9 +121,12 @@ E-commerce-backend/
 - **products**: `id (SERIAL PK)`, `title`, `name`, `category`, `price (NUMERIC)`, `description`
 - **orders**: `id (SERIAL PK)`, `order_date (TIMESTAMPTZ)`, `products (JSONB)`, `price (NUMERIC)`, `payment_method (TEXT)`, `payment_token (TEXT)`, `payment_status (TEXT)`, `recipient (JSONB)`, `address`, `remarks`, `paid (BOOL)`, `shipped (BOOL)`
 
-## Security & Architecture Enhancements (Phases 0, 1, and 2 Complete)
+## Security & Architecture Enhancements (Phases 0, 1, 2 & 3 Complete)
 
 - **Architecture**: The massive monolithic `index.ts` was torn down and restructured into dedicated layers (`routes`, `controllers`, `services`, `repositories`), enabling isolated testing and cleaner code.
+- **Performance (Database)**: Upgraded from `pg.Client` to a highly scalable `pg.Pool` to handle concurrent connections efficiently. Added indexing to `products` and `orders` tables for significantly faster querying.
+- **Performance (Caching)**: Integrated `ioredis`. Express sessions are now persisted in Redis using `connect-redis`. The `ProductService` uses a Cache-Aside pattern (with a 5-minute TTL) to aggressively serve product lists directly from memory.
+- **RESTful API Design**: Upgraded `/api/getProduct` to a standardized `/api/products` endpoint supporting pagination (`page`, `limit`) and sorting (`sort`, `order`).
 - **Logging**: Added `pino` for robust JSON structured logging across the application.
 - **Error Handling**: Standardized error management through a centralized `ApiError` utility and global middleware.
 - **Input Validation**: All incoming requests are now validated via `Zod` schemas and a global middleware (`src/middlewares/validate.middleware.ts`).
