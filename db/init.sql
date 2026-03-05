@@ -15,12 +15,22 @@ INSERT INTO products (id, title, name, category, price, description) VALUES
   (3, 'Sound Cube', 'Bluetooth Speaker', 'gadget', 1890, 'Portable speaker with 12-hour battery life.')
 ON CONFLICT (id) DO NOTHING;
 
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'customer',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS orders (
   id SERIAL PRIMARY KEY,
   order_date TIMESTAMPTZ NOT NULL,
   products JSONB NOT NULL,
   price NUMERIC NOT NULL,
-  payment JSONB NOT NULL,
+  payment_method TEXT NOT NULL,
+  payment_token TEXT,
+  payment_status TEXT NOT NULL DEFAULT 'pending',
   recipient JSONB NOT NULL,
   address TEXT NOT NULL,
   remarks TEXT,
