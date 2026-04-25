@@ -1,12 +1,26 @@
-FROM node:20
+FROM node:24-alpine AS deps
 
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci
 
-COPY package.json tsconfig.json coupon.json ./
+FROM deps AS build
+
+COPY tsconfig.json ./
 COPY src ./src
+RUN npm run build
 
-RUN npm install
+FROM node:24-alpine AS runner
 
+ENV NODE_ENV=production
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+COPY --from=build /app/dist ./dist
+
+USER node
 EXPOSE 8080
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]

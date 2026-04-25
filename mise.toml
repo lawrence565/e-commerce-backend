@@ -1,0 +1,18 @@
+[tools]
+node = "24.14.1"
+
+[tasks.install]
+description = "Install Node dependencies"
+run = "npm ci"
+
+[tasks.dev]
+description = "Run the API in development mode"
+run = "npm run dev"
+
+[tasks.build]
+description = "Compile TypeScript"
+run = "npm run build"
+
+[tasks.test]
+description = "Run project checks"
+run = "npm test"

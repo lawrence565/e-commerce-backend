@@ -1,6 +1,10 @@
-import session from "express-session";
+import "express-session";
+
+import type { CartItem, UserProfile } from "./domain.js";
+
 declare module "express-session" {
   interface SessionData {
-    cart?: { productId: number; category: string; quantity: number }[];
+    cart?: CartItem[];
+    profile?: UserProfile;
   }
 }
